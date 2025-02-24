@@ -14,9 +14,9 @@ export const theme = {
       success: '#22C55E',
       
       timer: {
-        running: '#22C55E',
-        paused: '#F59E0B',
-        completed: '#6366F1',
+        running: '#4CAF50',
+        paused: '#FFC107',
+        completed: '#22C55E',
       }
     },
   
@@ -36,6 +36,7 @@ export const theme = {
         '2xl': 24,
         '3xl': 30,
         '4xl': 36,
+        'extra': 64,
       },
 
       lineHeights: {
@@ -63,6 +64,7 @@ export const theme = {
         md: 8,
         lg: 12,
         xl: 16,
+        'extra': 20
       },
 
       width: {
@@ -71,39 +73,6 @@ export const theme = {
         thick: 2,
       },
       
-    },
-  
-    shadows: {
-      sm: {
-        shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.18,
-        shadowRadius: 1.0,
-        elevation: 1,
-      },
-      md: {
-        shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 3,
-      },
-      lg: {
-        shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: 4,
-        },
-        shadowOpacity: 0.30,
-        shadowRadius: 4.65,
-        elevation: 5,
-      },
     },
   };
   
