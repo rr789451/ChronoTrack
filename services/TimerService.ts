@@ -30,37 +30,16 @@ const CATEGORIES_STORAGE_KEY = 'categories';
 const HISTORY_STORAGE_KEY = 'timerHistory';
 
 export class TimerService {
-  static getTimers = async (): Promise<Timer[]> => {
+  static async getTimers(): Promise<Timer[]> {
     try {
+      await new Promise(resolve => setTimeout(resolve, 100));
       const timersJson = await AsyncStorage.getItem(TIMERS_STORAGE_KEY);
-      if (!timersJson) return [];
-      
-      const timers: Timer[] = JSON.parse(timersJson);
-      const timerStates = await Promise.all(
-        timers.map(async (timer) => {
-          const stateJson = await AsyncStorage.getItem(`timer_${timer.id}`);
-          if (stateJson) {
-            const state: TimerState = JSON.parse(stateJson);
-            return {
-              ...timer,
-              status: state.status,
-              timeRemaining: state.timeRemaining
-            };
-          }
-          return {
-            ...timer,
-            status: timer.status || 'idle',
-            timeRemaining: timer.timeRemaining !== undefined ? timer.timeRemaining : timer.duration
-          };
-        })
-      );
-      
-      return timerStates;
+      return timersJson ? JSON.parse(timersJson) : [];
     } catch (error) {
       console.error('Failed to get timers:', error);
       return [];
     }
-  };
+  }
 
   static saveTimer = async (timer: Timer): Promise<void> => {
     try {
@@ -127,14 +106,28 @@ export class TimerService {
       if (stateJson) {
         state = JSON.parse(stateJson);
         state.status = status;
-        state.timeRemaining = timeRemaining;
+        
+        state.timeRemaining = status === 'completed' ? 0 : timeRemaining;
       } else {
         state = {
           id,
           status,
-          timeRemaining,
+          timeRemaining: status === 'completed' ? 0 : timeRemaining,
           halfwayAlertShown: false
         };
+      }
+      
+      const timers = await this.getTimers();
+      const index = timers.findIndex(t => t.id === id);
+      
+      if (index !== -1) {
+        timers[index] = {
+          ...timers[index],
+          status,
+          timeRemaining: status === 'completed' ? 0 : timeRemaining
+        };
+        
+        await AsyncStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify(timers));
       }
       
       await AsyncStorage.setItem(`timer_${id}`, JSON.stringify(state));
@@ -179,10 +172,11 @@ export class TimerService {
       const stateJson = await AsyncStorage.getItem(`timer_${timerId}`);
       if (stateJson) {
         const state: TimerState = JSON.parse(stateJson);
+        
         return {
           ...timer,
           status: state.status,
-          timeRemaining: state.timeRemaining
+          timeRemaining: state.status === 'completed' ? 0 : state.timeRemaining
         };
       }
       
@@ -223,21 +217,50 @@ export class TimerService {
   static getTimerHistory = async (): Promise<CompletedTimer[]> => {
     try {
       const historyJson = await AsyncStorage.getItem(HISTORY_STORAGE_KEY);
-      if (historyJson) {
-        return JSON.parse(historyJson);
+      
+      if (!historyJson) {
+        return [];
       }
-      return [];
+      
+      const history = JSON.parse(historyJson);
+      return history;
     } catch (error) {
-      console.error('Failed to get timer history:', error);
       return [];
     }
   };
 
   static addTimerToHistory = async (timer: CompletedTimer): Promise<void> => {
     try {
+      
       const history = await this.getTimerHistory();
-      history.unshift(timer); 
+      
+      history.unshift(timer);
+      
       await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+      
+      const timers = await this.getTimers();
+      const index = timers.findIndex(t => t.id === timer.id);
+      
+      if (index !== -1) {
+        timers[index] = {
+          ...timers[index],
+          status: 'completed',
+          timeRemaining: 0
+        };
+        await AsyncStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify(timers));
+      } else {
+        console.warn(`Warning: Timer ${timer.id} not found in main storage`);
+      }
+      
+      const timerState = {
+        id: timer.id,
+        status: 'completed',
+        timeRemaining: 0,
+        halfwayAlertShown: true
+      };
+      
+      await AsyncStorage.setItem(`timer_${timer.id}`, JSON.stringify(timerState));
+      
     } catch (error) {
       console.error('Failed to add timer to history:', error);
       throw error;
@@ -252,16 +275,45 @@ export class TimerService {
       throw error;
     }
   };
-
+  
   static startCategoryTimers = async (category: string): Promise<void> => {
     try {
       const timers = await this.getTimers();
-      const categoryTimers = timers.filter(timer => timer.category === category);
-      
-      for (const timer of categoryTimers) {
-        if (timer.status !== 'completed') {
-          await this.updateTimerState(timer.id, 'running', timer.timeRemaining || timer.duration);
+      const timerStates = await Promise.all(
+        timers
+          .filter(timer => timer.category === category && timer.status !== 'completed')
+          .map(async timer => {
+            const stateJson = await AsyncStorage.getItem(`timer_${timer.id}`);
+            const state = stateJson ? JSON.parse(stateJson) : null;
+            return { 
+              timer, 
+              currentTimeRemaining: state?.timeRemaining ?? timer.timeRemaining ?? timer.duration,
+              halfwayAlertShown: state?.halfwayAlertShown ?? false
+            };
+          })
+      );
+
+      const updatedTimers = timers.map(timer => {
+        if (timer.category === category && timer.status !== 'completed') {
+          const timerState = timerStates.find(state => state.timer.id === timer.id);
+          return { 
+            ...timer, 
+            status: 'running',
+            timeRemaining: timerState?.currentTimeRemaining ?? timer.timeRemaining ?? timer.duration
+          };
         }
+        return timer;
+      });
+
+      await AsyncStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify(updatedTimers));
+
+      for (const timerState of timerStates) {
+        await AsyncStorage.setItem(`timer_${timerState.timer.id}`, JSON.stringify({
+          id: timerState.timer.id,
+          status: 'running',
+          timeRemaining: timerState.currentTimeRemaining,
+          halfwayAlertShown: timerState.halfwayAlertShown
+        }));
       }
     } catch (error) {
       console.error('Failed to start category timers:', error);
@@ -271,14 +323,75 @@ export class TimerService {
 
   static pauseCategoryTimers = async (category: string): Promise<void> => {
     try {
+      
       const timers = await this.getTimers();
-      const categoryTimers = timers.filter(timer => 
-        timer.category === category && timer.status === 'running'
+      
+      const categoryRunningTimers = timers.filter(
+        timer => timer.category === category && timer.status === 'running'
       );
       
-      for (const timer of categoryTimers) {
-        await this.updateTimerState(timer.id, 'paused', timer.timeRemaining || 0);
+      if (categoryRunningTimers.length === 0) {
+        return; 
       }
+      
+      const updatedTimerStates = await Promise.all(
+        categoryRunningTimers.map(async (timer) => {
+          const stateJson = await AsyncStorage.getItem(`timer_${timer.id}`);
+          let currentTimeRemaining = timer.duration; 
+          let status = 'paused';
+          
+          if (stateJson) {
+            try {
+              const state = JSON.parse(stateJson);
+              currentTimeRemaining = state.timeRemaining;
+            } catch (e) {
+              console.error(`Error parsing timer state for ${timer.id}:`, e);
+            }
+          }
+          
+          return {
+            ...timer,
+            status: 'paused',
+            timeRemaining: currentTimeRemaining
+          };
+        })
+      );
+      
+      const updatedTimers = timers.map(timer => {
+        const updatedTimer = updatedTimerStates.find(t => t.id === timer.id);
+        if (updatedTimer) {
+          return updatedTimer;
+        }
+        return timer;
+      });
+      
+      await AsyncStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify(updatedTimers));
+      
+      for (const updatedTimer of updatedTimerStates) {
+        const stateJson = await AsyncStorage.getItem(`timer_${updatedTimer.id}`);
+        let halfwayAlertShown = false;
+        
+        if (stateJson) {
+          try {
+            const state = JSON.parse(stateJson);
+            halfwayAlertShown = state.halfwayAlertShown;
+          } catch (e) {
+            console.error(`Error parsing timer state for ${updatedTimer.id}:`, e);
+          }
+        }
+        
+        const newState = {
+          id: updatedTimer.id,
+          status: 'paused',
+          timeRemaining: updatedTimer.timeRemaining,
+          halfwayAlertShown: halfwayAlertShown
+        };
+        
+        await AsyncStorage.setItem(`timer_${updatedTimer.id}`, JSON.stringify(newState));
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
     } catch (error) {
       console.error('Failed to pause category timers:', error);
       throw error;
@@ -287,12 +400,41 @@ export class TimerService {
 
   static resetCategoryTimers = async (category: string): Promise<void> => {
     try {
+      
       const timers = await this.getTimers();
+      
       const categoryTimers = timers.filter(timer => timer.category === category);
       
-      for (const timer of categoryTimers) {
-        await this.updateTimerState(timer.id, 'idle', timer.duration);
+      if (categoryTimers.length === 0) {
+        return;
       }
+      
+      const updatedTimers = timers.map(timer => {
+        if (timer.category === category) {
+          return { 
+            ...timer, 
+            status: 'idle',
+            timeRemaining: timer.duration
+          };
+        }
+        return timer;
+      });
+  
+      await AsyncStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify(updatedTimers));
+  
+      for (const timer of categoryTimers) {
+        const resetState = {
+          id: timer.id,
+          status: 'idle',
+          timeRemaining: timer.duration,
+          halfwayAlertShown: false
+        };
+        
+        await AsyncStorage.setItem(`timer_${timer.id}`, JSON.stringify(resetState));
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
     } catch (error) {
       console.error('Failed to reset category timers:', error);
       throw error;

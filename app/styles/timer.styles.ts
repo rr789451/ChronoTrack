@@ -191,7 +191,6 @@ export const timerStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: theme.spacing.sm,
-    marginBottom: theme.spacing.sm,
   },
 
   progressBarContainer: {
@@ -210,10 +209,10 @@ export const timerStyles = StyleSheet.create({
   },
 
   percentageText: {
-    fontSize: theme.typography.sizes.sm,
+    fontSize: theme.typography.sizes.xs,
     fontWeight: '600',
     color: '#555',
     width: theme.spacing['2xl'],
-    textAlign: 'right',
+    textAlign: 'left',
   }
 });

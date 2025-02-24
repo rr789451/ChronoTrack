@@ -55,9 +55,14 @@ export default function HomeScreen() {
   );
   
   const handleTimerComplete = async (timerId: string) => {
+    
     try {
       const timer = await TimerService.getTimerById(timerId);
-      if (!timer) return;
+      if (!timer) {
+        console.error(`Timer ${timerId} not found`);
+        return;
+      }
+      
       
       const completedTimer: CompletedTimer = {
         id: timer.id,
@@ -69,13 +74,19 @@ export default function HomeScreen() {
       
       await TimerService.addTimerToHistory(completedTimer);
       
-      await TimerService.updateTimerState(timer.id, 'completed', 0);
+      const updatedTimer: TimerType = {
+        ...timer,
+        status: 'completed',
+        timeRemaining: 0
+      };
       
-      setCompletedTimer(timer);
+      await TimerService.updateTimer(updatedTimer);
+      
+      setCompletedTimer(updatedTimer);
       setCompletedTimerId(timer.id);
       setShowCompletionModal(true);
       
-      loadTimers();
+      setTimeout(() => loadTimers(), 300);
     } catch (error) {
       console.error('Failed to handle timer completion:', error);
     }
@@ -112,7 +123,7 @@ export default function HomeScreen() {
   const startCategoryTimers = async (category: string) => {
     try {
       await TimerService.startCategoryTimers(category);
-      loadTimers();
+      setTimeout(() => loadTimers(), 500);
     } catch (error) {
       console.error('Failed to start category timers:', error);
       Alert.alert('Error', 'Failed to start timers');
@@ -122,7 +133,7 @@ export default function HomeScreen() {
   const pauseCategoryTimers = async (category: string) => {
     try {
       await TimerService.pauseCategoryTimers(category);
-      loadTimers();
+      setTimeout(() => loadTimers(), 500);
     } catch (error) {
       console.error('Failed to pause category timers:', error);
       Alert.alert('Error', 'Failed to pause timers');
@@ -132,7 +143,7 @@ export default function HomeScreen() {
   const resetCategoryTimers = async (category: string) => {
     try {
       await TimerService.resetCategoryTimers(category);
-      loadTimers();
+      setTimeout(() => loadTimers(), 500);
     } catch (error) {
       console.error('Failed to reset category timers:', error);
       Alert.alert('Error', 'Failed to reset timers');
@@ -189,6 +200,7 @@ export default function HomeScreen() {
     return (
       <Timer
         id={item.id}
+        key={`${item.id}-${item.status}-${item.timeRemaining}`}
         name={item.name}
         duration={item.duration}
         halfwayAlert={item.halfwayAlert}
