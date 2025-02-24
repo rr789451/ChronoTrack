@@ -1,50 +1,95 @@
-# Welcome to your Expo app 👋
+# ChronoTrack
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A customizable timer application built with React Native that allows users to create, manage, and interact with multiple timers.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Create Custom Timers**: Create timers with custom names, durations, and categories.
+- **Category Organization**: Group timers by categories for better organization.
+- **Bulk Actions**: Start, pause, or reset all timers in a category with a single tap.
+- **Visual Feedback**: Smooth progress bar based on remaining time provide visual indication of progress.
+- **Timer History**: Track completed timers with timestamps.
+- **Halfway Alerts**: Optional alerts when timers reach halfway point.
+- **Haptic Feedback**: Tactile feedback when interacting with timers.
+- **Data Persistence**: All timers and settings are stored locally for persistence between app launches.
 
-   ```bash
+## Setup Instructions
+
+### Prerequisites
+
+- Node.js (v14 or newer)
+- npm or yarn
+- Expo CLI
+- iOS Simulator or Android Emulator (or physical device)
+
+### Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/rr789451/ChronoTrack.git
+   cd ChronoTrack
+   ```
+
+2. Install dependencies:
+   ```
    npm install
+   # or
+   yarn install
    ```
 
-2. Start the app
-
-   ```bash
-    npx expo start
+3. Start the development server:
+   ```
+   npm start
+   # or
+   yarn start
    ```
 
-In the output, you'll find options to open the app in a
+4. Run on a device or simulator:
+   - Press `i` to open in iOS simulator
+   - Press `a` to open in Android simulator
+   - Scan the QR code with the Expo Go app on your device
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+/
+├── app/                      # Main app directory (Expo Router)
+│   ├── _layout.tsx           # Root layout with bottom tabs navigation
+|   |── (tabs)                # Navigation definations  
+│       ├── index.tsx         # Home screen (first tab)
+│       ├── history.tsx       # History screen (third tab)
+│       ├── newTimer.tsx      # Add timer screen (second tab)
+│   ├── styles/               # Style definitions
+│   │   ├── history.styles.ts # History screen styles
+│   │   ├── home.styles.ts    # Home screen styles
+│   │   ├── newTimer.styles.ts # New timer form styles
+│   │   └── timer.styles.ts   # Timer component styles
+│   └── theme/                # Theme definitions
+│       └── index.ts          # Theme constants
+├── components/               # Reusable components
+│   └── Timer.tsx             # Timer component with state and visualization
+└── services/                 # Business logic
+    └── TimerService.ts       # Timer data management
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Implementation Details
 
-## Learn more
+- Built with TypeScript for type safety
+- Uses React Navigation for screen navigation
+- Uses AsyncStorage for data persistence
+- Animated API for smooth color transitions
+- Context API for state management
+- Expo Haptics for tactile feedback
 
-To learn more about developing your project with Expo, look at the following resources:
+## Development Assumptions
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+1. Users may have multiple timers running simultaneously.
+3. Category grouping helps users organize related timers.
+4. Bulk actions improve efficiency when working with multiple timers.
+5. Local storage is sufficient for data persistence.
 
-## Join the community
+## Future Enhancements
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Theme customization (light/dark mode)
+- Cloud sync for timers across devices
+- Custom sounds for timer completion
