@@ -8,14 +8,23 @@
     "scheme": "chronotrack",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rohit.chronotrack"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/splash-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+        "backgroundColor": "#363433"
+      },
+      "package": "com.rohit.timerapp",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
